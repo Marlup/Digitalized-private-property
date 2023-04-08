@@ -14,8 +14,10 @@ Moreover, the logic of the code allows the cession of rights from one or more pa
 
 PD. Disclaimer.
 
-To everyone reading this, I'd be much obliged if you gave this project a Start if you find it useful.
+To everyone reading this, 
 
-And last but not least. **ANY** detail, improvement, typo, error, or correction will be welcome, no matter the difficulty, simplicity, or silliness. Please, make yourself comfortable about sharing your thoughts because I don't consider myself an expert but a passionate developer and learner who is willing to bring new ideas and try making them real.
+**ANY** improvement or correction will be welcome, no matter the difficulty, simplicity, or silliness. Please, make yourself comfortable about sharing your thoughts because I don't consider myself an expert, but a passionate developer and learner who is willing to bring new ideas and try making them real.
+
+I'd be much obliged if you gave this project a star if you find it insightful.
 
 Thank you.
