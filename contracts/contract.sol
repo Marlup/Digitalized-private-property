@@ -33,7 +33,7 @@ contract Contract is IContract {
 
     // ** Modifiers **
     modifier rightOwner() {
-        require(parties[msg.sender].isParty, "External has not right");
+        require(parties[msg.sender].isParty, "External has not right to operate");
         _;
     }
     modifier onSession() {
@@ -63,7 +63,7 @@ contract Contract is IContract {
     /*
     * @dev Constructor to fill Contract data
     */
-    constructor (uint _contractId, bytes memory _title, bytes memory _points, address[] memory _ids) {
+    constructor(uint _contractId, bytes memory _title, bytes memory _points, address[] memory _ids) {
         // Contract section
         factory = msg.sender;
         contractId = _contractId;
@@ -273,8 +273,7 @@ contract Contract is IContract {
         }
     }
     /*
-    * @dev Delete party from contract and give right to one or more living or external
-    * parties
+    * @dev Remove party from contract
     */
     function rightRenounce() external virtual override rightOwner() notOnSession() moreOneParties() {
         parties[msg.sender].isParty = false;
