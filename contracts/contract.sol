@@ -12,9 +12,10 @@ contract Contract is IContract {
     // Identifiers
     address private factory;
     uint private immutable contractId;
-    // Descriptors
+    // Contract meta
+    uint nTotalShares;
     bytes private title;
-    bytes private points;
+    bytes private detail;
     // Session
     uint private currentSession;
     // Parties
@@ -27,13 +28,13 @@ contract Contract is IContract {
     mapping(uint => VotingSession) private sessions;
 
     // ** Events **
-    event RightCessionRequest(address indexed from, address indexed to, uint indexed time);
-    event RightCession(address indexed from, address indexed to, uint indexed time);
-    event RightRenounce(address indexed from, uint indexed time);
+    event ShareCessionRequest(address indexed from, address indexed to, uint indexed time, uint amount);
+    event ShareCession(address indexed from, address indexed to, uint indexed time, uint amount);
+    event ShareRenounce(address indexed from, uint indexed time);
 
     // ** Modifiers **
-    modifier rightOwner() {
-        require(parties[msg.sender].isParty, "External has not right to operate");
+    modifier shareOwner() {
+        require(parties[msg.sender].isParty, "External has not share to operate");
         _;
     }
     modifier onSession() {
@@ -63,16 +64,24 @@ contract Contract is IContract {
     /*
     * @dev Constructor to fill Contract data
     */
-    constructor(uint _contractId, bytes memory _title, bytes memory _points, address[] memory _ids) {
+    constructor(uint _contractId, bytes memory _title, bytes memory _detail, uint _nTotalShares, address[] memory _ids) {
+        require(_nTotalShares >= _ids.length, "Total number of shares must be greater or equal to number of parties");
         // Contract section
         factory = msg.sender;
         contractId = _contractId;
         title = _title;
-        points = _points;
+        detail = _detail;
+        nTotalShares = _nTotalShares;
+        if (_nTotalShares % _ids.length > 0) {
+            // Increase total shares to distribute them equally between parties
+            _nTotalShares += _ids.length - _nTotalShares % _ids.length;
+        }
         // Parties section
         for (uint i = 0; i < _ids.length; i++) {
+            require(_ids[i] != address(0), "Address zero is now allowed as a party");
             parties[_ids[i]].isParty = true;
             parties[_ids[i]].wasParty = true;
+            parties[_ids[i]].nShares = _nTotalShares / _ids.length;
         }
         nParties = _ids.length;
     }
@@ -80,7 +89,7 @@ contract Contract is IContract {
     /*
     * @dev A new session is opened
     */
-    function newVotingSession(VotingType _type) external virtual override rightOwner() notOnSession() moreOneParties() okVotingType(_type)  {
+    function newVotingSession(VotingType _type) external virtual override shareOwner() notOnSession() moreOneParties() okVotingType(_type)  {
         if (_type == VotingType.Majority && nParties < 3) {
             revert("Session with majority type is not allowed when number of parties is less than 3");
         }
@@ -93,7 +102,7 @@ contract Contract is IContract {
     * @dev Add one vote count and in-favor vote if input is true.
     * Close voting if conditions apply
     */
-    function increaseVotes(bool _inFavor) external virtual override rightOwner() onSession() moreOneParties() hasNotVoted() returns(bool) {
+    function increaseVotes(bool _inFavor) external virtual override shareOwner() onSession() moreOneParties() hasNotVoted() returns(bool) {
         if (_inFavor) {
             sessions[currentSession].nVotesInFavor += 1;
             parties[msg.sender].inFavor = true;
@@ -107,7 +116,7 @@ contract Contract is IContract {
     * @dev Change vote to alternative
     * Close voting if conditions apply
     */
-    function repeatVote(bool _inFavor) external rightOwner() onSession() moreOneParties() hasVoted() returns(bool) {
+    function repeatVote(bool _inFavor) external shareOwner() onSession() moreOneParties() hasVoted() returns(bool) {
         require(parties[msg.sender].inFavor != _inFavor, "Party cannot vote the same option");
         if (_inFavor) {
             sessions[currentSession].nVotesInFavor += 1;
@@ -121,7 +130,7 @@ contract Contract is IContract {
     /*
     * @dev Try to close the voting session (internal function)
     */
-    function tryCloseVoting() external virtual override rightOwner() onSession() moreOneParties() {
+    function tryCloseVoting() external virtual override shareOwner() onSession() moreOneParties() {
         require(_tryCloseVoting(), "Session cannot be closed");
     }
     /*
@@ -166,10 +175,10 @@ contract Contract is IContract {
         return title;
     }
     /*
-    * @dev Returns conditions/points of the contract
+    * @dev Returns conditions/detail of the contract
     */
-    function getPoints() external virtual override view returns(bytes memory) {
-        return points;
+    function getDetail() external virtual override view returns(bytes memory) {
+        return detail;
     }
     /*
     * @dev Returns number of parties
@@ -179,7 +188,7 @@ contract Contract is IContract {
     }
     // ** Party getters **
     /*
-    * @dev Returns if party have right to this contract
+    * @dev Returns if party have share to this contract
     */
     function getPartyAllowed(address _party) external virtual override view returns(bool) {
         return parties[_party].isParty;
@@ -218,66 +227,49 @@ contract Contract is IContract {
         }
     }
     /*
-    * @dev Returns number of votes done and in votes favor
+    * @dev External/non-party cession of shares request to party
     */
-    /*
-    function getVotes() external virtual override view returns(uint, uint) {
-        return (sessions[currentSession].nVotesDone, sessions[currentSession].nVotesInFavor);
-    }
-    /*
-    * @dev Returns open date of voting session
-    */
-    /*
-    function getVotingOpenDate() external virtual override view returns(uint) {
-        return sessions[currentSession].openDate;
-    }
-    /*
-    * @dev Returns close date of voting session
-    */
-    /*
-    function getVotingCloseDate() external virtual override view returns(uint) {
-        return sessions[currentSession].closeDate;
-    }
-    /*
-    * @dev External/non-party cession of rights request to party
-    */
-    function rightCessionRequest(address _to) external virtual override {
-        require(!cessionRequest[msg.sender], "Solicitant has already requested right cession");
+    function shareCessionRequest(address _to, uint _shareAmount) external virtual override {
+        require(!cessionRequest[msg.sender], "Solicitant has already requested share cession");
         require(!parties[msg.sender].isParty, "Solicitant is already a party");
         require(msg.sender != _to, "Cedant and cessionary cannot be equal");
         require(parties[_to].isParty, "Cedant is not a party");
+        require(_shareAmount > parties[_to].nShares, "Cannot request that amount of shares");
         // Update request
         cessionRequest[msg.sender] = true;
-        emit RightCessionRequest(msg.sender, _to, block.timestamp);
+        emit ShareCessionRequest(msg.sender, _to, block.timestamp, _shareAmount);
     }
     /*
-    * @dev Cession of right to external address/addresses, hence making it/them party/parties
+    * @dev Cession of share to external address/addresses, hence making it/them party/parties
     */
-    function rightCession(address[] calldata _toS) external virtual override rightOwner() notOnSession() {
-        // Swap party right
-        for (uint i = 0; i < _toS.length; i++) {
-            require(cessionRequest[_toS[i]], "External has not requested any right cession");
-            require(!parties[_toS[i]].isParty, "Cessionary is already a party");
-            // Update right cession
-            parties[_toS[i]].isParty = true;
-            parties[_toS[i]].wasParty = true;
-            // Update right request
-            cessionRequest[_toS[i]] = false;
-            // Emit right cession
-            emit RightCession(msg.sender, _toS[i], block.timestamp);
+    function shareCession(address _to, uint _shareAmount) external virtual override shareOwner() notOnSession() {
+        require(cessionRequest[_to], "External has not requested any share cession");
+        require(!parties[_to].isParty, "Cessionary is already a party");
+        require(_shareAmount > parties[_to].nShares, "Cannot give that amount of shares");
+        // Update party
+        // If address is not party
+        if (!parties[_to].isParty) {
+            // Add new party
+            parties[_to].isParty = true;
+            parties[_to].wasParty = true;
+            nParties += 1;
         }
+        // Transfer shares
+        parties[msg.sender].nShares -= _shareAmount;
+        parties[_to].nShares += _shareAmount;
+        // Update share request
+        cessionRequest[_to] = false;
+        // Emit share cession
+        emit ShareCession(msg.sender, _to, block.timestamp, _shareAmount);
         parties[msg.sender].isParty = false;
-        if (_toS.length > 1){
-            // If right is given to more than 1 parties
-            nParties += _toS.length - 1;
-        }
     }
     /*
-    * @dev Remove party from contract
+    * @dev Remove party from contract and give shares to parties
     */
-    function rightRenounce() external virtual override rightOwner() notOnSession() moreOneParties() {
+    function shareRenounce() external virtual override shareOwner() notOnSession() moreOneParties() {
         parties[msg.sender].isParty = false;
+        parties[msg.sender].nShares = 0;
         nParties -= 1;
-        emit RightRenounce(msg.sender, block.timestamp);
+        emit ShareRenounce(msg.sender, block.timestamp);
     }
 }

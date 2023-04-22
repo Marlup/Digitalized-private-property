@@ -16,7 +16,7 @@ interface IContract {
     // Contract getters
     function getFactory() external view returns(address);
     function getTitle() external view returns(bytes memory);
-    function getPoints() external view returns(bytes memory);
+    function getDetail() external view returns(bytes memory);
     // Party getters
     function getNParties() external view returns(uint);
     function getPartyAllowed(address _party) external view returns(bool);
@@ -26,8 +26,8 @@ interface IContract {
     //function getVotes() external view returns(uint, uint);
     //function getVotingOpenDate() external view returns(uint);
     //function getVotingCloseDate() external view returns(uint);
-    // Right access functions
-    function rightCessionRequest(address _from) external;
-    function rightCession(address[] calldata _toS) external;
-    function rightRenounce() external;
+    // share access functions
+    function shareCessionRequest(address _from, uint _shareAmount) external;
+    function shareCession(address _to, uint _shareAmount) external;
+    function shareRenounce() external;
 }

@@ -15,6 +15,7 @@ struct Party {
     bool isParty;
     bool wasParty;
     bool inFavor;
+    uint nShares;
     mapping(uint => bool) voted;
 }
 // Enum for voting types

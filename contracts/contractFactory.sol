@@ -24,8 +24,8 @@ contract ContractFactory {
 
     // ++ Functions ++
 
-    function addNewContract(bytes calldata _title, bytes calldata _points, address[] calldata _parties) external returns(bool) {
-        contracts[nContracts] = new Contract(nContracts, _title, _points, _parties);
+    function addNewContract(bytes calldata _title, bytes calldata _detail, uint nTotalShares, address[] calldata _parties) external returns(bool) {
+        contracts[nContracts] = new Contract(nContracts, _title, _detail, nTotalShares, _parties);
         nContracts += 1;
         emit newContract(msg.sender, nContracts);
         return true;
@@ -40,21 +40,21 @@ contract ContractFactory {
     function setRepeatVote(uint _id, bool _inFavor) external {
         contracts[_id].repeatVote(_inFavor);
     }
-    function setRightCessionRequest(uint _id, address _to) external {
-        contracts[_id].rightCessionRequest(_to);
+    function setShareCessionRequest(uint _id, address _to, uint _amount) external {
+        contracts[_id].shareCessionRequest(_to, _amount);
     }
-    function setRightCession(uint _id, address[] calldata _toS) external {
-        contracts[_id].rightCession(_toS);
+    function setShareCession(uint _id, address _to, uint _amount) external {
+        contracts[_id].shareCession(_to, _amount);
     }
-    function setRightRenounce(uint _id) external {
-        contracts[_id].rightRenounce();
+    function setshareRenounce(uint _id) external {
+        contracts[_id].shareRenounce();
     }
     // ++ Getters ++
     function getTitle(uint _id) external view returns(bytes memory) {
         return contracts[_id].getTitle();
     }
-    function getPoints(uint _id) external view returns(bytes memory) {
-        return contracts[_id].getPoints();
+    function getDetail(uint _id) external view returns(bytes memory) {
+        return contracts[_id].getDetail();
     }
     function getPartyAllowed(uint _id, address _party) external view returns(bool) {
         return contracts[_id].getPartyAllowed(_party);
@@ -71,12 +71,4 @@ contract ContractFactory {
     function getSessionResult(uint _id, uint _number) external view  returns(string memory) {
         return contracts[_id].getSessionResult(_number);
     }
-    /*
-    function getVotingOpenDate(uint _id) external view  returns(uint) {
-        return contracts[_id].getVotingOpenDate();
-    }
-    function getVotingCloseDate(uint _id) external view  returns(uint) {
-        return contracts[_id].getVotingCloseDate();
-    }
-    */
 }

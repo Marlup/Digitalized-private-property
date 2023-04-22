@@ -11,18 +11,18 @@ contract('Contract', function(accounts) {
   const party2 = accounts[2];
   const party3 = accounts[3];
   const title = "Contract Title";
-  const points = "Contract Points";
+  const detail = "Contract Detail";
 
   // Before each test, deploy a new instance of the contract
   beforeEach(async () => {
     const instance = await Contract.deployed();
     const nParties = await instance.getNParties.call()
     const returnTitle = await instance.getTitle.call()
-    const returnPoints = await instance.getPoints.call()
+    const returnDetail = await instance.getDetail.call()
 
     assert.equal(nParties, 2);
     assert.equal(web3.utils.toUtf8(returnTitle), title);
-    assert.equal(web3.utils.toUtf8(returnPoints), points);
+    assert.equal(web3.utils.toUtf8(returnDetail), detail);
   });
 
   // Test the newVotingSession function

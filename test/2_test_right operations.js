@@ -14,30 +14,30 @@ contract('Contract', function(accounts) {
   const party6 = accounts[6];
   const external = accounts[0];
   const title = "Contract Title";
-  const points = "Contract Points";
+  const share = "Contract Share";
 
   // Before each test, deploy a new instance of the contract
   beforeEach(async () => {
     const instance = await Contract.deployed();
   });
   // Test the newVotingSession function
-  it('should allow external to request right cession to party2', async () => {
+  it('should allow external to request share cession to party2', async () => {
     const instance = await Contract.deployed();
 
-    await instance.rightCessionRequest(party2, {from: external});
-    const RightCessionRequestEvent = await instance.getPastEvents('RightCessionRequest', { fromBlock: 0, toBlock: 'latest' } );
-    console.log("Number of events:", RightCessionRequestEvent.length);
-    console.log("Event:", RightCessionRequestEvent[0]);
-    console.log("Event:", RightCessionRequestEvent[1]);
+    await instance.shareCessionRequest(party2, {from: external});
+    const ShareCessionRequestEvent = await instance.getPastEvents('ShareCessionRequest', { fromBlock: 0, toBlock: 'latest' } );
+    console.log("Number of events:", ShareCessionRequestEvent.length);
+    console.log("Event:", ShareCessionRequestEvent[0]);
+    console.log("Event:", ShareCessionRequestEvent[1]);
     });
   // Test the increaseVotes function
-  it('should not allow external to request right cession to party2 twice', async () => {
+  it('should not allow external to request share cession to party2 twice', async () => {
     const instance = await Contract.deployed();
 
-    // request right cession (should not be possible)
+    // request share cession (should not be possible)
     let error;
     try {
-      await instance.rightCessionRequest(party1, {from: external});
+      await instance.shareCessionRequest(party1, 1, {from: external});
     } catch (error) {
       console.log("2 2 Expected error:", error);
       assert.exists(error);
@@ -45,11 +45,11 @@ contract('Contract', function(accounts) {
   });
 
   // Test the repeatVote function
-  it('should allow party 2 to cesate its right', async () => {
+  it('should allow party 2 to cesate its share', async () => {
     // Take deployed Contract contract
     const sessionNumber = 0;
     const instance = await Contract.deployed();
-    await instance.rightCession([external], {from: party1});
+    await instance.shareCession(external, 1, {from: party1});
 
     let error;
     try {
